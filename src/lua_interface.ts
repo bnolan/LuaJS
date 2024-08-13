@@ -2,10 +2,15 @@ declare var global: unknown;
 
 (function () {
     let _GLOBAL;
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
         _GLOBAL = window;
-    } else if (global) {
+    } else if (typeof self !== "undefined") {
+        _GLOBAL = self;
+    } else if (typeof global !== "undefined") {
         _GLOBAL = global;
+    } else {
+        // @ts-ignore
+        _GLOBAL = this;
     }
 
     const UNKNOWN_LUA_REFERENCE = Symbol("UNKNOWN_LUA_REFERENCE");
@@ -13,17 +18,29 @@ declare var global: unknown;
     function mustMalloc(size: number): EmscriptenPointer {
         const ptr = Module._malloc(size);
         if (!ptr) {
-            throw new Error('Out of memory');
+            throw new Error("Out of memory");
         }
         return ptr;
     }
 
-    function importFromC<K  extends keyof LuaNativeFromC>(arr: [name: K, returnType: string, string[], opts?: { async: boolean }][]): LuaNative {
+    function importFromC<K extends keyof LuaNativeFromC>(
+        arr: [
+            name: K,
+            returnType: string,
+            string[],
+            opts?: { async: boolean }
+        ][]
+    ): LuaNative {
         const target: Partial<LuaNative> = {};
 
         for (const [name, returnType, argTypes, options] of arr) {
             if (options) {
-                target[name] = Module.cwrap(name, returnType, argTypes, options);
+                target[name] = Module.cwrap(
+                    name,
+                    returnType,
+                    argTypes,
+                    options
+                );
                 continue;
             }
 
@@ -58,8 +75,8 @@ declare var global: unknown;
         function = 6,
         userdata = 7,
         thread = 8,
-        coroutine = 8
-    };
+        coroutine = 8,
+    }
 
     const enum LuaJSDataTypes {
         unknown = 0,
@@ -67,7 +84,7 @@ declare var global: unknown;
         array = 2,
         object = 3,
         symbol = 4,
-    };
+    }
 
     type LuaTableRef = [unknown, number, number];
 
@@ -101,7 +118,9 @@ declare var global: unknown;
         return idx;
     }
 
-    Module.__luaRemoveVarPtr = function luaRemoveVarPtr(varPtr: EmscriptenPointer) {
+    Module.__luaRemoveVarPtr = function luaRemoveVarPtr(
+        varPtr: EmscriptenPointer
+    ) {
         const ptr = luaPassedVars.get(varPtr)!;
 
         if (ptr[1] > 1) {
@@ -113,7 +132,11 @@ declare var global: unknown;
         luaPassedVarsMap.delete(ptr[0]);
     };
 
-    function decodeSingle(state: EmscriptenPointer, pos: number, convertArgs = false): unknown {
+    function decodeSingle(
+        state: EmscriptenPointer,
+        pos: number,
+        convertArgs = false
+    ): unknown {
         switch (luaNative!.lua_type(state, pos)) {
             case LuaTypes.nil:
                 return undefined;
@@ -124,7 +147,10 @@ declare var global: unknown;
             case LuaTypes.string:
                 return luaNative!.js_tostring(state, pos);
             case LuaTypes.table:
-                const tbl = new LuaTable(state, luaNative!.luajs_toref(state, pos));
+                const tbl = new LuaTable(
+                    state,
+                    luaNative!.luajs_toref(state, pos)
+                );
                 if (convertArgs) {
                     const ret = tbl.toObject(true, true);
                     tbl.unref();
@@ -134,7 +160,10 @@ declare var global: unknown;
             case LuaTypes.userdata:
                 return getVarByRef(luaNative!.luajs_popvar(state, pos));
             case LuaTypes.function:
-                const ret = new LuaFunction(state, luaNative!.luajs_toref(state, pos));
+                const ret = new LuaFunction(
+                    state,
+                    luaNative!.luajs_toref(state, pos)
+                );
                 if (convertArgs) {
                     return ret.getClosure();
                 }
@@ -143,11 +172,18 @@ declare var global: unknown;
                 if (convertArgs) {
                     return undefined;
                 }
-                return new LuaReference(state, luaNative!.luajs_toref(state, pos));
+                return new LuaReference(
+                    state,
+                    luaNative!.luajs_toref(state, pos)
+                );
         }
     }
 
-    function decodeStack(state: EmscriptenPointer, stackSize: number , convertArgs = false) {
+    function decodeStack(
+        state: EmscriptenPointer,
+        stackSize: number,
+        convertArgs = false
+    ) {
         const ret = [];
         for (let i = 0; i < stackSize; i++) {
             ret.unshift(decodeSingle(state, -1, convertArgs));
@@ -180,21 +216,39 @@ declare var global: unknown;
                 }
                 break;
             case "function":
-                luaNative!.luajs_pushvar(state, luaGetVarPtr(arg), LuaJSDataTypes.function);
+                luaNative!.luajs_pushvar(
+                    state,
+                    luaGetVarPtr(arg),
+                    LuaJSDataTypes.function
+                );
                 break;
             default:
                 if (arg instanceof LuaReference) {
                     arg.push(state);
                 } else if (arg instanceof Array) {
-                    luaNative!.luajs_pushvar(state, luaGetVarPtr(arg), LuaJSDataTypes.array);
+                    luaNative!.luajs_pushvar(
+                        state,
+                        luaGetVarPtr(arg),
+                        LuaJSDataTypes.array
+                    );
                 } else {
-                    luaNative!.luajs_pushvar(state, luaGetVarPtr(arg), LuaJSDataTypes.object);
+                    luaNative!.luajs_pushvar(
+                        state,
+                        luaGetVarPtr(arg),
+                        LuaJSDataTypes.object
+                    );
                 }
                 break;
         }
     }
 
-    Module.__luaCallFunctionPointer = function luaCallFunctionPointer(funcPtr: EmscriptenPointer, state: EmscriptenPointer, stackSize: number, convertArgs: boolean, callWithNew: boolean) {
+    Module.__luaCallFunctionPointer = function luaCallFunctionPointer(
+        funcPtr: EmscriptenPointer,
+        state: EmscriptenPointer,
+        stackSize: number,
+        convertArgs: boolean,
+        callWithNew: boolean
+    ) {
         try {
             const func = getVarByRef(funcPtr) as luajsFunction;
             let variables: unknown[];
@@ -230,7 +284,12 @@ declare var global: unknown;
             ["luajs_alloc_size_t", "number", []],
             ["luajs_call", "number", ["number", "number"], { async: true }],
             ["luajs_delete_state", "", ["number"]],
-            ["luajs_execute", "number", ["number", "number", "number", "number"], { async: true }],
+            [
+                "luajs_execute",
+                "number",
+                ["number", "number", "number", "number"],
+                { async: true },
+            ],
             ["luajs_get_state_global", "number", ["number"]],
             ["luajs_new_state", "number", []],
             ["luajs_noref", "number", []],
@@ -264,7 +323,10 @@ declare var global: unknown;
         ]);
         Module.__luaNative = luaNative;
 
-        luaNative.js_drop = function js_drop(state: EmscriptenPointer, n: number) {
+        luaNative.js_drop = function js_drop(
+            state: EmscriptenPointer,
+            n: number
+        ) {
             luaNative!.lua_settop(state, -n - 1);
         };
 
@@ -274,7 +336,10 @@ declare var global: unknown;
             return ref;
         };
 
-        luaNative.js_tostring = function js_tostring(state: number, i: number): string {
+        luaNative.js_tostring = function js_tostring(
+            state: number,
+            i: number
+        ): string {
             const lenC = luaNative!.luajs_alloc_size_t();
             try {
                 const strC = luaNative!.lua_tolstring(state, i, lenC);
@@ -329,9 +394,7 @@ declare var global: unknown;
 
     const luaRefFinalizer = new FinalizationRegistry(luaUnref);
 
-    class LuaError extends Error {
-
-    }
+    class LuaError extends Error {}
 
     interface RefObject {
         state: number;
@@ -391,7 +454,7 @@ declare var global: unknown;
         }
     }
 
-    class LuaFunction  extends LuaReference {
+    class LuaFunction extends LuaReference {
         getClosure(): (...args: unknown[]) => Promise<unknown[]> {
             return LuaFunction.prototype.call.bind(this);
         }
@@ -421,13 +484,12 @@ declare var global: unknown;
     }
 
     class LuaTable extends LuaReference {
-        set(key: unknown, value:unknown) {
+        set(key: unknown, value: unknown) {
             this.push();
             pushVar(this.state, key);
             pushVar(this.state, value);
             luaNative!.lua_settable(this.state, -3);
             luaNative!.js_drop(this.state, 1);
-
         }
 
         get(key: unknown) {
@@ -453,7 +515,11 @@ declare var global: unknown;
                 let value = decodeSingle(this.state, -2);
 
                 if (recurse && maxDepth > 0 && value instanceof LuaTable) {
-                    const newValue = value.toObject(true, unrefAll, maxDepth - 1);
+                    const newValue = value.toObject(
+                        true,
+                        unrefAll,
+                        maxDepth - 1
+                    );
                     value.unref();
                     value = newValue;
                 }
@@ -464,7 +530,11 @@ declare var global: unknown;
                 }
 
                 if (isArray) {
-                    const keyNumeric = luaNative!.lua_tonumberx(this.state, -1, 0);
+                    const keyNumeric = luaNative!.lua_tonumberx(
+                        this.state,
+                        -1,
+                        0
+                    );
                     if (keyNumeric > 0) {
                         retArray[keyNumeric - 1] = value;
                         luaNative!.js_drop(this.state, 2);
@@ -504,7 +574,7 @@ declare var global: unknown;
             this.stateGlobal = luaNative!.luajs_get_state_global(this.state);
             luaStateTable[this.stateGlobal] = this;
 
-            await this.run("dofile('/lua/init.lua')", '/lua/init.lua');
+            await this.run("dofile('/lua/init.lua')", "/lua/init.lua");
         }
 
         getTop() {
@@ -530,11 +600,16 @@ declare var global: unknown;
         async run(code: string, blockName?: string) {
             const codeLen = Module.lengthBytesUTF8(code);
             const codeC = mustMalloc(codeLen + 1);
-            const blockNameC = Module.stringToNewUTF8(blockName || 'input');
+            const blockNameC = Module.stringToNewUTF8(blockName || "input");
             let stack: number | undefined;
             try {
                 Module.stringToUTF8(code, codeC, codeLen + 1);
-                stack = await luaNative!.luajs_execute(this.state!, codeC, codeLen, blockNameC) as number;
+                stack = (await luaNative!.luajs_execute(
+                    this.state!,
+                    codeC,
+                    codeLen,
+                    blockNameC
+                )) as number;
             } finally {
                 Module._free(codeC);
                 Module._free(blockNameC);
@@ -552,11 +627,14 @@ declare var global: unknown;
 
         createTable() {
             luaNative!.lua_createtable(this.state!, 0, 0);
-            return new LuaTable(this.state!, luaNative!.js_pop_ref(this.state!));
+            return new LuaTable(
+                this.state!,
+                luaNative!.js_pop_ref(this.state!)
+            );
         }
 
         async __runNode(node: HTMLScriptElement) {
-            let code = node.textContent ?? '';
+            let code = node.textContent ?? "";
             if (node.src) {
                 const res = await fetch(node.src);
                 code = await res.text();
@@ -573,7 +651,11 @@ declare var global: unknown;
         }
 
         async loadDocumentScripts(doc: Document) {
-            const nodesToLoad = [...doc.querySelectorAll('script[type="text/lua"]') as NodeListOf<HTMLScriptElement>];
+            const nodesToLoad = [
+                ...(doc.querySelectorAll(
+                    'script[type="text/lua"]'
+                ) as NodeListOf<HTMLScriptElement>),
+            ];
 
             for (const node of nodesToLoad) {
                 await this.__tryRunNode(node);
@@ -583,7 +665,7 @@ declare var global: unknown;
         listenForScripts(doc: Document) {
             const observer = new MutationObserver(async (mutations) => {
                 const nodesToLoad: HTMLScriptElement[] = [];
-                for (const mutation of mutations)  {
+                for (const mutation of mutations) {
                     if (mutation.type !== "childList") {
                         continue;
                     }
@@ -612,7 +694,7 @@ declare var global: unknown;
 
             observer.observe(doc, {
                 childList: true,
-                subtree: true
+                subtree: true,
             });
         }
 
@@ -631,7 +713,7 @@ declare var global: unknown;
         const L = new LuaState();
         await L.open();
         return L;
-    }
+    };
 
     Module.UNKNOWN_LUA_REFERENCE = UNKNOWN_LUA_REFERENCE;
 

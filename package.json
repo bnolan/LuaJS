@@ -1,38 +1,38 @@
 {
-  "name": "@doridian/luajs",
-  "private": false,
-  "files": [
-    "README.md",
-    "LICENSE",
-    "dist/*",
-    "util/loader_mjs.mjs",
-    "util/loader_mjs.d.mts",
-    "util/loader_cjs.cjs",
-    "util/loader_cjs.d.cts"
-  ],
-  "version": "1.0.8",
-  "description": "Bindings for C Lua to JavaScript with Emscripten and WebAssembly",
-  "main": "util/loader_cjs.cjs",
-  "module": "util/loader_mjs.mjs",
-  "exports": {
-    "require": "./util/loader_cjs.cjs",
-    "import": "./util/loader_mjs.mjs"
-  },
-  "type": "module",
-  "scripts": {
-    "clean": "emmake make clean && rm -rf ./dist && tsc --build --clean && cd src/ && tsc --build --clean && cd ..",
-    "build": "mkdir -p dist && cp -f src/luajs.d.ts dist/luajs.d.mts && cp -f src/luajs.d.ts dist/luajs.d.cts && cd src/ && tsc && cd .. && tsc && emmake make install",
-    "lint": "echo 'Lint not set up yet'",
-    "fmt": "echo 'Format not set up yet'",
-    "test": "npm run build && npm run testOnly",
-    "testOnly": "node ./util/testrunner.mjs",
-    "prepublishOnly": "npm run build"
-  },
-  "author": "Doridian",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^20.10.2",
-    "glob": "^11.0.0",
-    "typescript": "^5.3.2"
-  }
+    "name": "@voxels/luajs",
+    "private": false,
+    "files": [
+        "README.md",
+        "LICENSE",
+        "dist/*",
+        "util/loader_mjs.mjs",
+        "util/loader_mjs.d.mts",
+        "util/loader_cjs.cjs",
+        "util/loader_cjs.d.cts"
+    ],
+    "version": "1.0.8",
+    "description": "Bindings for C Lua to JavaScript with Emscripten and WebAssembly",
+    "main": "util/loader_cjs.cjs",
+    "module": "util/loader_mjs.mjs",
+    "exports": {
+        "require": "./util/loader_cjs.cjs",
+        "import": "./util/loader_mjs.mjs"
+    },
+    "type": "module",
+    "scripts": {
+        "clean": "emmake make clean && rm -rf ./dist && tsc --build --clean && cd src/ && tsc --build --clean && cd ..",
+        "build": "mkdir -p dist && cp -f src/luajs.d.ts dist/luajs.d.mts && cp -f src/luajs.d.ts dist/luajs.d.cts && cd src/ && tsc && cd .. && tsc && emmake make install",
+        "lint": "echo 'Lint not set up yet'",
+        "fmt": "echo 'Format not set up yet'",
+        "test": "npm run build && npm run testOnly",
+        "testOnly": "node ./util/testrunner.mjs",
+        "prepublishOnly": "npm run build"
+    },
+    "author": "Doridian",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/node": "^20.10.2",
+        "glob": "^11.0.0",
+        "typescript": "^5.3.2"
+    }
 }
