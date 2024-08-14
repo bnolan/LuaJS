@@ -1,6 +1,5 @@
 {
-    "name": "@voxels/luajs",
-    "private": false,
+    "name": "@voxellian/luajs",
     "files": [
         "README.md",
         "LICENSE",
@@ -10,7 +9,7 @@
         "util/loader_cjs.cjs",
         "util/loader_cjs.d.cts"
     ],
-    "version": "1.0.8",
+    "version": "1.1.0",
     "description": "Bindings for C Lua to JavaScript with Emscripten and WebAssembly",
     "main": "util/loader_cjs.cjs",
     "module": "util/loader_mjs.mjs",
