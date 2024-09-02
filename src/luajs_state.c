@@ -14,6 +14,7 @@ lua_State *luajs_new_state() {
   lua_gc(L, LUA_GCSTOP, 0);       // stop GC during initialization
   luaL_openlibs(L);
 
+  /*
   // Load js
   lua_newtable(L);
 
@@ -41,7 +42,8 @@ lua_State *luajs_new_state() {
 
   lua_pop(L, 1);
   // END: Load js.global
-
+  */
+ 
   lua_gc(L, LUA_GCRESTART, 0); // restart GC once initialization is done
 
   return L;
