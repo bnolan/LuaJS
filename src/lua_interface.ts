@@ -574,7 +574,7 @@ declare var global: unknown;
             this.stateGlobal = luaNative!.luajs_get_state_global(this.state);
             luaStateTable[this.stateGlobal] = this;
 
-            await this.run("dofile('/lua/init.lua')", "/lua/init.lua");
+            // await this.run("dofile('/lua/init.lua')", "/lua/init.lua");
         }
 
         getTop() {
